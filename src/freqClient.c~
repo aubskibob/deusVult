@@ -1,0 +1,73 @@
+/* File:  
+ *    freqClient.c
+ *
+ * Purpose:
+ *    Command Line client to handle requests for frequency Daemon.
+ *    Additionally is capable of creating and removing the pipe
+ *    by itself.
+ *
+ * Input:
+ *    Execution taks several command line argument
+ * Output: 
+ *    message from each process
+ *
+ * Compile:  gcc -g -Wall -o bin/freqClient src/freqClient.c -lm
+ * Usage:    ./freqClient <command>
+             - make sure to create the pipe first
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <string.h>
+#include <unistd.h>
+
+int main(int argc, char *argv[]){
+
+  //check that there is a command to extract
+  if(argc!=2)
+    {
+      printf("Usage: bin/freqClient <command>\n");
+      exit(0);
+    }
+  
+  char *command = (char*)argv[1];
+
+  /* Set up variables for demon pipe address relative to current dir */
+  int fd;
+  char * daemonPipe = "/pipes/daemonControlPipe";
+  char cwd[1024];
+  char addr[1024];
+
+  if(strcmp(command,"-mkpipe") == 0)
+    {
+        /* create the FIFO daemon */
+        mkfifo(addr, 0666);
+    }
+  else if(strcmp(command,"-rmpipe") == 0)
+    {
+       /* remove the FIFO daemon (unwanted or multiple commands not allowed) */
+       unlink(addr);
+    }
+  else
+    {
+      /* create the FIFO daemon */
+      mkfifo(addr, 0666);
+
+      printf("here\n");
+	
+      /* figure out pipe address */
+      getcwd(cwd, sizeof(cwd));
+      strcpy(addr,cwd);
+      strcat(addr,daemonPipe);
+
+      /* send (write) command to the daemon */
+      fd = open(addr, O_WRONLY);
+      write(fd, command, sizeof(command));
+      close(fd);
+    }
+  
+  return 0;	
+}
